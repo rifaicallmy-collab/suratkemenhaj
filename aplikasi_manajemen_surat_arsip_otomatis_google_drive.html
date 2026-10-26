@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIMAS-DRIVE | Sistem Penomoran & Arsip Surat Otomatis</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49',
+            },
+            drive: {
+              blue: '#4285F4',
+              green: '#0F9D58',
+              yellow: '#F4B400',
+              red: '#DB4437'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .custom-pulse {
+      animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(59, 130, 246, 0.3); }
+      50% { border-color: rgba(59, 130, 246, 0.9); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Header Navigasi Atas -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Identitas Aplikasi -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-sky-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-extrabold text-lg tracking-tight text-slate-900">SIMAS<span class="text-sky-600">-DRIVE</span></span>
+              <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Drive Sync Aktif
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 hidden sm:block">Sistem Penomoran Surat & Arsip Cloud Otomatis</p>
+          </div>
+        </div>
+
+        <!-- Aksi Cepat Header -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button onclick="switchTab('ambil-nomor')" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs sm:text-sm font-semibold shadow-sm transition-all shadow-brand-600/20">
+            <i data-lucide="hash" class="w-4 h-4"></i>
+            <span>Ambil Nomor Surat</span>
+          </button>
+          <button onclick="resetDataSample()" title="Muat Data Sampel Demo" class="p-2 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tab Navigasi Menu Utama -->
+    <nav class="bg-slate-100/70 border-t border-slate-200/80 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-2 overflow-x-auto py-1.5 no-scrollbar">
+        <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-white/60">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Dashboard</span>
+        </button>
+        <button onclick="switchTab('ambil-nomor')" id="tabBtn-ambil-nomor" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-white/60">
+          <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+          <span>Ambil Nomor Surat</span>
+        </button>
+        <button onclick="switchTab('surat-masuk')" id="tabBtn-surat-masuk" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-white/60">
+          <i data-lucide="inbox" class="w-4 h-4"></i>
+          <span>Surat Masuk</span>
+        </button>
+        <button onclick="switchTab('surat-keluar')" id="tabBtn-surat-keluar" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-white/60">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Surat Keluar & Riwayat Nomor</span>
+        </button>
+        <button onclick="switchTab('drive-explorer')" id="tabBtn-drive-explorer" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-white/60">
+          <i data-lucide="hard-drive" class="w-4 h-4 text-emerald-600"></i>
+          <span>Google Drive Explorer</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Konten Utama Aplikasi -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: DASHBOARD -->
+    <!-- ======================================================== -->
+    <section id="tab-dashboard" class="tab-content space-y-6">
+      
+      <!-- Banner Sambutan & Status Cloud -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-900 to-sky-900 p-6 sm:p-8 text-white shadow-xl">
+        <div class="relative z-10 max-w-3xl space-y-2">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-medium text-sky-200 border border-white/10">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Cloud Storage Drive: Aktif & Otomatis Terarsip</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Pusat Kendali Surat & Penomoran Instansi</h1>
+          <p class="text-slate-300 text-sm leading-relaxed">
+            Ambil nomor surat secara instan tanpa khawatir nomor kembar. Setiap berkas yang diunggah otomatis dibuatkan salinan di folder virtual Google Drive institusi.
+          </p>
+          <div class="pt-3 flex flex-wrap gap-3">
+            <button onclick="switchTab('ambil-nomor')" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-lg transition-all shadow-md flex items-center space-x-2">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Buat / Ambil Nomor Baru</span>
+            </button>
+            <button onclick="switchTab('drive-explorer')" class="bg-white/10 hover:bg-white/20 text-white font-medium text-xs sm:text-sm px-4 py-2.5 rounded-lg transition-all border border-white/15 flex items-center space-x-2">
+              <i data-lucide="folder-search" class="w-4 h-4"></i>
+              <span>Buka Folder Drive</span>
+            </button>
+          </div>
+        </div>
+        <div class="absolute -right-8 -bottom-10 opacity-10 pointer-events-none">
+          <i data-lucide="archive" class="w-72 h-72 text-white"></i>
+        </div>
+      </div>
+
+      <!-- Kartu Metrik Ringkasan -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Surat Masuk</span>
+            <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+              <i data-lucide="inbox" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <h3 id="statSuratMasuk" class="text-2xl sm:text-3xl font-bold text-slate-900">0</h3>
+            <span class="text-xs text-emerald-600 font-medium flex items-center">
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 mr-0.5"></i> Masuk
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Surat Keluar</span>
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <h3 id="statSuratKeluar" class="text-2xl sm:text-3xl font-bold text-slate-900">0</h3>
+            <span class="text-xs text-indigo-600 font-medium">Terbit</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Menunggu Berkas</span>
+            <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i data-lucide="clock-alert" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <h3 id="statPendingUpload" class="text-2xl sm:text-3xl font-bold text-amber-600">0</h3>
+            <span class="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Nomor Dipesan</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Tersinkron Drive</span>
+            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <i data-lucide="cloud-check" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <h3 id="statTotalDriveFiles" class="text-2xl sm:text-3xl font-bold text-emerald-700">0</h3>
+            <span class="text-xs text-emerald-600 font-medium">Berkas PDF/Doc</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pintasan & Log Aktivitas Terakhir -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Tabel Aktivitas Terbaru -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">Aktivitas Nomor & Surat Terbaru</h2>
+              <p class="text-xs text-slate-500">Pembaruan transaksi surat dan status arsip terkini</p>
+            </div>
+            <button onclick="switchTab('surat-keluar')" class="text-xs text-brand-600 font-semibold hover:text-brand-700 hover:underline">
+              Lihat Semua
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100/70 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Tipe & Nomor</th>
+                  <th class="py-3 px-4">Perihal / Pengirim</th>
+                  <th class="py-3 px-4">Status Drive</th>
+                  <th class="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="recentActivityTable" class="divide-y divide-slate-100">
+                <!-- Diisi via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panduan Aturan Format Nomor & Drive Tree -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
+          <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm">
+            <i data-lucide="info" class="w-4 h-4 text-brand-600"></i>
+            <span>Struktur Format Penomoran</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Sistem menggunakan format baku penomoran instansi dengan pembaharuan nomor urut otomatis dan bulan Romawi:
+          </p>
+          <div class="bg-slate-900 text-sky-400 p-3 rounded-lg font-mono text-xs overflow-x-auto select-all">
+            [No.Urut]/[Kode-Surat]/KEMEN-KALTARA/[Romawi]/[Tahun]
+          </div>
+          <div class="text-xs space-y-2 pt-2 border-t border-slate-100 text-slate-500">
+            <div class="flex items-center justify-between">
+              <span>Bulan Sekarang:</span>
+              <span id="currentRomanMonthBadge" class="font-bold text-slate-800">X (Oktober)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Tahun Berjalan:</span>
+              <span id="currentYearBadge" class="font-bold text-slate-800">2026</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Folder Root Drive:</span>
+              <span class="font-mono text-emerald-700 font-semibold text-[11px]">/ARSIP_GOOGLE_DRIVE/</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: PENGAMBILAN NOMOR SURAT OTOMATIS -->
+    <!-- ======================================================== -->
+    <section id="tab-ambil-nomor" class="tab-content hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Formulir Ambil Nomor -->
+        <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-5">
+          <div class="border-b border-slate-200 pb-4">
+            <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded bg-sky-100 text-sky-800 text-xs font-semibold mb-2">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-sky-600"></i>
+              <span>Generator Bebas Bentrok</span>
+            </div>
+            <h2 class="text-lg font-bold text-slate-900">Form Pengambilan Nomor Surat Keluar</h2>
+            <p class="text-xs text-slate-500">Nomor urut langsung dikunci dan disimpan ke basis data secara berurutan.</p>
+          </div>
+
+          <form id="formAmbilNomor" onsubmit="handleAmbilNomor(event)" class="space-y-4">
+            
+            <!-- Jenis Klasifikasi Surat -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Klasifikasi / Jenis Surat *</label>
+              <select id="selectKlasifikasi" onchange="previewNomorSurat()" class="w-full text-xs rounded-lg border border-slate-300 bg-white py-2.5 px-3 focus:outline-hidden focus:ring-2 focus:ring-brand-500 font-medium" required>
+                <option value="UND" data-nama="Undangan Dinas">UND - Undangan Resmi / Dinas</option>
+                <option value="ST" data-nama="Surat Tugas" selected>ST - Surat Tugas Pelaksanaan Kegiatan</option>
+                <option value="SKet" data-nama="Surat Keterangan">SKet - Surat Keterangan / Pengantar</option>
+                <option value="ND" data-nama="Nota Dinas">ND - Nota Dinas Internal</option>
+                <option value="SPPD" data-nama="Perjalanan Dinas">SPPD - Surat Perintah Perjalanan Dinas</option>
+                <option value="PENG" data-nama="Pengumuman">PENG - Pengumuman Resmi</option>
+              </select>
+            </div>
+
+            <!-- Pratinjau Nomor yang akan Terbit -->
+            <div class="p-3.5 rounded-lg bg-sky-50 border border-sky-200/80">
+              <div class="flex items-center justify-between text-xs text-sky-800 font-medium mb-1">
+                <span>Pratinjau Nomor yang Dihasilkan:</span>
+                <span class="text-[11px] font-mono bg-sky-200/70 text-sky-900 px-2 py-0.5 rounded">Otomatis Terkunci</span>
+              </div>
+              <div id="previewNomorBox" class="text-base sm:text-lg font-mono font-bold text-sky-950 tracking-tight select-all">
+                001/ST/KEMEN-KALTARA/X/2026
+              </div>
+            </div>
+
+            <!-- Perihal Surat -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Perihal / Hal Surat *</label>
+              <textarea id="inputPerihal" rows="2" placeholder="Contoh: Tugas Pengawasan Lapangan Proyek Jalan Lingkar" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500" required></textarea>
+            </div>
+
+            <!-- Informasi Pemohon & Unit Kerja -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pemohon / Pembuat *</label>
+                <input type="text" id="inputPemohon" placeholder="Nama staf / pejabat" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500" required>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Unit Kerja / Divisi *</label>
+                <select id="selectUnitKerja" class="w-full text-xs rounded-lg border border-slate-300 bg-white py-2.5 px-3 focus:outline-hidden focus:ring-2 focus:ring-brand-500 font-medium" required>
+                  <option value="Sekretariat Utama">Sekretariat Utama</option>
+                  <option value="Bagian Kepegawaian">Bagian Kepegawaian (HRD)</option>
+                  <option value="Bidang Teknis & Sarana">Bidang Teknis & Sarana</option>
+                  <option value="Keuangan & Anggaran">Keuangan & Anggaran</option>
+                  <option value="Humas & Protokoler">Humas & Protokoler</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Upload Berkas Opsional Saat Ambil Nomor -->
+            <div class="pt-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Unggah Berkas Langsung (Opsional)</label>
+              <div class="border-2 border-dashed border-slate-300 rounded-lg p-3 text-center hover:bg-slate-50 transition-colors cursor-pointer" onclick="document.getElementById('inputBerkasLangsung').click()">
+                <i data-lucide="cloud-upload" class="w-6 h-6 mx-auto text-slate-400 mb-1"></i>
+                <span id="labelBerkasLangsung" class="text-xs text-slate-600 block">Pilih file PDF/Word jika berkas sudah final</span>
+                <span class="text-[11px] text-slate-400">Jika belum siap, Anda bisa upload nanti di menu riwayat.</span>
+                <input type="file" id="inputBerkasLangsung" class="hidden" onchange="handleFileSelected(this, 'labelBerkasLangsung')">
+              </div>
+            </div>
+
+            <!-- Tombol Aksi -->
+            <div class="pt-2">
+              <button type="submit" class="w-full py-3 px-4 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold text-sm shadow-md shadow-brand-600/30 transition-all flex items-center justify-center space-x-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                <span>Terbitkan Nomor Surat Sekarang</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Kartu Hasil Nomor Terakhir yang Diterbitkan -->
+        <div class="lg:col-span-5 space-y-6">
+          
+          <div id="hasilNomorCard" class="bg-gradient-to-b from-sky-50 to-white rounded-xl border border-sky-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-sky-800">Nomor Baru Berhasil Dibuat</span>
+              <span id="badgeHasilStatus" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                Menunggu Berkas
+              </span>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-sky-200 shadow-inner space-y-2">
+              <div class="text-[11px] text-slate-500 font-medium">Nomor Surat Resmi:</div>
+              <div id="displayNomorBaru" class="text-lg sm:text-xl font-mono font-extrabold text-slate-900 break-all select-all">
+                - BELUM ADA NOMOR -
+              </div>
+              <div class="pt-2 flex gap-2">
+                <button type="button" onclick="copyHasilNomor()" id="btnSalinNomor" class="flex-1 py-2 px-3 rounded-md bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs flex items-center justify-center space-x-1.5 transition-colors">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>Salin Nomor</span>
+                </button>
+                <button type="button" onclick="switchTab('surat-keluar')" class="py-2 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors">
+                  Lihat di Riwayat
+                </button>
+              </div>
+            </div>
+
+            <div class="text-xs space-y-2 text-slate-600 border-t border-sky-100 pt-3">
+              <div class="flex justify-between">
+                <span class="text-slate-500">Perihal:</span>
+                <span id="displayPerihal" class="font-medium text-slate-800 text-right truncate max-w-[200px]">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Pemohon:</span>
+                <span id="displayPemohon" class="font-medium text-slate-800">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Tanggal Ambil:</span>
+                <span id="displayTanggal" class="font-medium text-slate-800">-</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-500">Arsip Drive:</span>
+                <span id="displayDriveStatus" class="font-mono text-[11px] text-slate-500">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Petunjuk Alur -->
+          <div class="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+              <i data-lucide="help-circle" class="w-4 h-4 text-sky-600"></i>
+              <span>Alur Penggunaan Cepat</span>
+            </h3>
+            <ol class="text-xs text-slate-600 space-y-2 list-decimal list-inside leading-relaxed">
+              <li>Pilih jenis surat dan ketikkan perihal.</li>
+              <li>Klik <strong>Terbitkan Nomor Surat</strong>.</li>
+              <li>Salin nomor ke dokumen Word/kegiatan Anda.</li>
+              <li>Setelah surat dicetak/ditandatangani, unggah file PDF-nya di menu <strong>Surat Keluar</strong> untuk menyelesaikan arsip otomatis.</li>
+            </ol>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: SURAT MASUK -->
+    <!-- ======================================================== -->
+    <section id="tab-surat-masuk" class="tab-content hidden space-y-6">
+      
+      <!-- Bar Aksi & Filter -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Agenda Surat Masuk</h2>
+          <p class="text-xs text-slate-500">Pencatatan surat dari luar instansi beserta pengarsipan berkas scan ke Google Drive.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="openModalSuratMasuk()" class="py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center space-x-2 shadow-sm transition-all shadow-emerald-600/20">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Catat Surat Masuk Baru</span>
+          </button>
+          <button onclick="exportToCSV('masuk')" class="py-2.5 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+            <span>Ekspor Excel/CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabel Daftar Surat Masuk -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        
+        <!-- Filter Bar -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div class="relative w-full sm:w-80">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="searchSuratMasuk" onkeyup="renderTabelSuratMasuk()" placeholder="Cari perihal, nomor, pengirim..." class="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <select id="filterSifatSurat" onchange="renderTabelSuratMasuk()" class="text-xs rounded-lg border border-slate-300 bg-white py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-brand-500">
+              <option value="ALL">Semua Sifat Surat</option>
+              <option value="Biasa">Biasa</option>
+              <option value="Penting">Penting</option>
+              <option value="Rahasia">Rahasia</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabel Konten -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">Tgl Terima</th>
+                <th class="py-3.5 px-4">Nomor & Asal Surat</th>
+                <th class="py-3.5 px-4">Perihal</th>
+                <th class="py-3.5 px-4">Sifat</th>
+                <th class="py-3.5 px-4">Status Drive</th>
+                <th class="py-3.5 px-4 text-center">Aksi Dokumen</th>
+              </tr>
+            </thead>
+            <tbody id="tabelSuratMasukBody" class="divide-y divide-slate-100">
+              <!-- Render via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer / Paging info -->
+        <div class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+          <span id="infoSuratMasukCount">Menampilkan 0 surat</span>
+          <span class="text-[11px] text-slate-400">Tersimpan di Penyimpanan Cloud Virtual</span>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- TAB 4: SURAT KELUAR & RIWAYAT NOMOR -->
+    <!-- ======================================================== -->
+    <section id="tab-surat-keluar" class="tab-content hidden space-y-6">
+      
+      <!-- Bar Ringkasan & Tindakan -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Arsip Pengambilan Nomor & Surat Keluar</h2>
+          <p class="text-xs text-slate-500">Pantau seluruh nomor yang diambil. Nomor gantung yang belum berberkas dapat diunggah sewaktu-waktu.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="switchTab('ambil-nomor')" class="py-2.5 px-4 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center space-x-2 shadow-sm transition-all shadow-brand-600/20">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Ambil Nomor Baru</span>
+          </button>
+          <button onclick="exportToCSV('keluar')" class="py-2.5 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+            <span>Ekspor Excel/CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabel Surat Keluar & Pengambilan Nomor -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        
+        <!-- Filter Bar -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div class="relative w-full sm:w-80">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="searchSuratKeluar" onkeyup="renderTabelSuratKeluar()" placeholder="Cari nomor, pemohon, perihal..." class="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <select id="filterStatusSuratKeluar" onchange="renderTabelSuratKeluar()" class="text-xs rounded-lg border border-slate-300 bg-white py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-brand-500">
+              <option value="ALL">Semua Status Arsip</option>
+              <option value="TERARSIP">Terarsip di Drive (Hijau)</option>
+              <option value="PENDING">Belum Upload Berkas (Kuning)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabel Konten -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">Tgl Ambil</th>
+                <th class="py-3.5 px-4">Nomor Surat Lengkap</th>
+                <th class="py-3.5 px-4">Pemohon & Unit</th>
+                <th class="py-3.5 px-4">Perihal</th>
+                <th class="py-3.5 px-4">Status Arsip Drive</th>
+                <th class="py-3.5 px-4 text-center">Aksi / Berkas</th>
+              </tr>
+            </thead>
+            <tbody id="tabelSuratKeluarBody" class="divide-y divide-slate-100">
+              <!-- Render via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer / Paging info -->
+        <div class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+          <span id="infoSuratKeluarCount">Menampilkan 0 nomor surat</span>
+          <span class="text-[11px] text-slate-400">Sinkronisasi folder /02_SURAT_KELUAR/</span>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- TAB 5: GOOGLE DRIVE VIRTUAL EXPLORER -->
+    <!-- ======================================================== -->
+    <section id="tab-drive-explorer" class="tab-content hidden space-y-6">
+      
+      <!-- Header Drive Box -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200">
+            <svg class="w-7 h-7" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 10.15z" fill="#ea4335"/>
+              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-base font-bold text-slate-900">Google Drive Cloud Storage (Virtual Repository)</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Auto-Organized</span>
+            </div>
+            <p class="text-xs text-slate-500">Struktur folder otomatis: <span class="font-mono text-slate-700">ARSIP_GOOGLE_DRIVE / [KATEGORI] / [TAHUN] / [BULAN]</span></p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="refreshDriveExplorer()" class="py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center space-x-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Segarkan Drive</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drive Browser Explorer Layout -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- Sidebar Struktur Folder (Pohon Drive) -->
+        <div class="md:col-span-4 bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 pb-2 border-b border-slate-100">
+            Pohon Direktori Drive
+          </div>
+          <div class="space-y-1 text-xs">
+            
+            <button onclick="filterDriveByFolder('ALL')" id="folderBtn-ALL" class="w-full flex items-center space-x-2 py-2 px-2.5 rounded-lg text-left font-medium bg-brand-50 text-brand-700">
+              <i data-lucide="hard-drive" class="w-4 h-4 text-brand-600"></i>
+              <span class="truncate">Semua Berkas Tersimpan</span>
+            </button>
+
+            <button onclick="filterDriveByFolder('01_SURAT_MASUK')" id="folderBtn-01_SURAT_MASUK" class="w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-left font-medium text-slate-600 hover:bg-slate-100">
+              <div class="flex items-center space-x-2 truncate">
+                <i data-lucide="folder" class="w-4 h-4 text-amber-500 fill-amber-100"></i>
+                <span class="truncate">01_SURAT_MASUK</span>
+              </div>
+              <span id="badgeFolderMasukCount" class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
+            </button>
+
+            <button onclick="filterDriveByFolder('02_SURAT_KELUAR')" id="folderBtn-02_SURAT_KELUAR" class="w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-left font-medium text-slate-600 hover:bg-slate-100">
+              <div class="flex items-center space-x-2 truncate">
+                <i data-lucide="folder" class="w-4 h-4 text-amber-500 fill-amber-100"></i>
+                <span class="truncate">02_SURAT_KELUAR</span>
+              </div>
+              <span id="badgeFolderKeluarCount" class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
+            </button>
+
+          </div>
+
+          <div class="pt-4 border-t border-slate-100">
+            <div class="text-[11px] text-slate-400 leading-tight">
+              Kapasitas Tersimpan:
+            </div>
+            <div class="mt-1 flex items-baseline justify-between">
+              <span id="driveStorageUsedText" class="text-xs font-bold text-slate-700">0 KB Digunakan</span>
+              <span class="text-[10px] text-slate-400">Google Drive API v3</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+              <div id="driveStorageBar" class="bg-brand-500 h-1.5 rounded-full" style="width: 15%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daftar Berkas File Grid di Drive -->
+        <div class="md:col-span-8 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="folder-open" class="w-4 h-4 text-brand-600"></i>
+              <span id="currentDriveBreadcrumb" class="text-xs font-mono font-semibold text-slate-700">ARSIP_GOOGLE_DRIVE/</span>
+            </div>
+            <span id="driveFileCountBadge" class="text-xs text-slate-500">0 File</span>
+          </div>
+
+          <!-- File Grid Container -->
+          <div id="driveFileGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-[280px]">
+            <!-- Render via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 1: FORM SURAT MASUK BARU -->
+  <!-- ======================================================== -->
+  <div id="modalSuratMasuk" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="inbox" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Input Surat Masuk</h3>
+            <p class="text-[11px] text-slate-500">File langsung diunggah ke Google Drive</p>
+          </div>
+        </div>
+        <button onclick="closeModalSuratMasuk()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSimpanSuratMasuk(event)" class="p-5 space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nomor Surat Asal (Dari Pengirim) *</label>
+          <input type="text" id="inMasukNomorAsal" placeholder="Contoh: 120/BAPEDA-KT/IX/2026" class="w-full rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Instansi / Pengirim *</label>
+            <input type="text" id="inMasukPengirim" placeholder="Nama Instansi Pengirim" class="w-full rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Tanggal Surat *</label>
+            <input type="date" id="inMasukTglSurat" class="w-full rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Perihal / Isi Ringkas *</label>
+          <textarea id="inMasukPerihal" rows="2" placeholder="Uraian perihal surat" class="w-full rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500" required></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Sifat Surat</label>
+            <select id="inMasukSifat" class="w-full rounded-lg border border-slate-300 p-2.5 bg-white">
+              <option value="Biasa">Biasa</option>
+              <option value="Penting">Penting</option>
+              <option value="Rahasia">Rahasia</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Tanggal Diterima</label>
+            <input type="date" id="inMasukTglTerima" class="w-full rounded-lg border border-slate-300 p-2.5 bg-white" required>
+          </div>
+        </div>
+
+        <!-- Upload File Surat Masuk -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Unggah Scan/Berkas PDF *</label>
+          <div class="border-2 border-dashed border-emerald-300 rounded-lg p-3 text-center bg-emerald-50/40 hover:bg-emerald-50 transition-colors cursor-pointer" onclick="document.getElementById('inMasukFile').click()">
+            <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto text-emerald-600 mb-1"></i>
+            <span id="labelMasukFile" class="text-xs text-slate-700 block font-medium">Klik untuk memilih file scan surat</span>
+            <span class="text-[10px] text-slate-400">PDF, JPG, PNG (Maks 10 MB)</span>
+            <input type="file" id="inMasukFile" class="hidden" required onchange="handleFileSelected(this, 'labelMasukFile')">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end space-x-2">
+          <button type="button" onclick="closeModalSuratMasuk()" class="py-2 px-3.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium">
+            Batal
+          </button>
+          <button type="submit" class="py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center space-x-1.5 shadow-sm">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Simpan & Arsipkan ke Drive</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- MODAL 2: UPLOAD BERKAS SUSULAN PADA NOMOR KELUAR -->
+  <!-- ======================================================== -->
+  <div id="modalUploadSusulan" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center">
+            <i data-lucide="file-up" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Unggah Berkas Resmi</h3>
+            <p class="text-[11px] text-slate-500">Lengkapi nomor surat yang telah dipesan</p>
+          </div>
+        </div>
+        <button onclick="closeModalUploadSusulan()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleUploadSusulan(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="susulanNomorId">
+
+        <div class="p-3 rounded-lg bg-slate-100 space-y-1">
+          <div class="text-[10px] text-slate-500 uppercase font-semibold">Nomor Surat Terkait:</div>
+          <div id="susulanNomorLabel" class="font-mono font-bold text-slate-800 text-xs break-all"></div>
+          <div id="susulanPerihalLabel" class="text-[11px] text-slate-600 italic"></div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Pilih File Final (Bertanda Tangan/Stempel) *</label>
+          <div class="border-2 border-dashed border-sky-300 rounded-lg p-4 text-center bg-sky-50/50 hover:bg-sky-50 transition-colors cursor-pointer" onclick="document.getElementById('inputSusulanFile').click()">
+            <i data-lucide="file-check" class="w-7 h-7 mx-auto text-sky-600 mb-1"></i>
+            <span id="labelSusulanFile" class="text-xs text-slate-700 block font-medium">Klik untuk memilih file PDF dokumen resmi</span>
+            <span class="text-[10px] text-slate-400">PDF/DOCX disarankan</span>
+            <input type="file" id="inputSusulanFile" class="hidden" required onchange="handleFileSelected(this, 'labelSusulanFile')">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end space-x-2">
+          <button type="button" onclick="closeModalUploadSusulan()" class="py-2 px-3 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium">
+            Tutup
+          </button>
+          <button type="submit" class="py-2 px-4 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center space-x-1.5 shadow-sm">
+            <i data-lucide="cloud-check" class="w-4 h-4"></i>
+            <span>Arsipkan Sekarang</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- MODAL 3: PREVIEW BERKAS VIRTUAL (SIMULASI PDF VIEWER) -->
+  <!-- ======================================================== -->
+  <div id="modalPreviewBerkas" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header Preview -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2 truncate">
+          <i data-lucide="file-text" class="w-4 h-4 text-sky-400"></i>
+          <span id="previewModalTitle" class="text-xs font-mono font-medium truncate">Dokumen_Viewer.pdf</span>
+        </div>
+        <button onclick="closeModalPreview()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Simulasi Lembar Kertas PDF -->
+      <div class="p-6 overflow-y-auto bg-slate-200 flex-1 flex justify-center">
+        <div class="w-full max-w-lg bg-white shadow-lg p-6 sm:p-8 rounded-sm text-slate-800 space-y-4 font-serif border border-slate-300 text-xs">
+          <!-- Kop Surat Simulasi -->
+          <div class="text-center border-b-2 border-slate-800 pb-3 space-y-1">
+            <h4 class="font-bold text-xs uppercase tracking-wider">PEMERINTAH PROVINSI KALIMANTAN UTARA</h4>
+            <h3 class="font-extrabold text-sm uppercase">DINAS ADMINISTRASI & KEARSIPAN DIGITAL</h3>
+            <p class="text-[10px] font-sans text-slate-500">Jalan Poros Pemerintahan No. 12, Tanjung Selor | Email: arsip@kemenkaltara.go.id</p>
+          </div>
+
+          <!-- Body Surat -->
+          <div class="space-y-3 font-sans pt-2">
+            <div class="flex justify-between text-[11px]">
+              <div>
+                <div><strong>Nomor :</strong> <span id="prevBodyNomor" class="font-mono">-</span></div>
+                <div><strong>Sifat  :</strong> <span id="prevBodySifat">Penting</span></div>
+                <div><strong>Hal    :</strong> <span id="prevBodyHal" class="font-semibold">-</span></div>
+              </div>
+              <div class="text-right">
+                <span id="prevBodyTgl">Tanjung Selor, 26 Oktober 2026</span>
+              </div>
+            </div>
+
+            <div class="pt-4 text-xs leading-relaxed text-slate-700 space-y-2">
+              <p>Kepada Yth,</p>
+              <p><strong id="prevBodyTujuan">Penerima Dokumen Resmi / Arsiparis</strong><br>Di Tempat</p>
+              <p class="pt-2 indent-6 text-justify">
+                Dengan hormat, sehubungan dengan pelaksanaan koordinasi kearsipan digital dan sistem informasi nomor dinas otomatis, bersama ini kami sampaikan dokumen resmi yang telah terdaftar sah dalam sistem basis data penomoran dan terenkripsi dalam repositori Google Drive.
+              </p>
+              <p class="indent-6 text-justify">
+                Seluruh data pada naskah ini sah dan telah diverifikasi oleh sistem penomoran otomatis instansi.
+              </p>
+            </div>
+
+            <!-- Tanda Tangan Virtual -->
+            <div class="pt-8 flex justify-end font-sans">
+              <div class="text-center w-52 space-y-2">
+                <p class="text-[11px]">Ditetapkan secara digital,</p>
+                <div class="w-24 h-16 mx-auto border border-dashed border-sky-300 rounded flex items-center justify-center bg-sky-50 text-[10px] text-sky-700 font-mono">
+                  [STEMPEL ELEKTRONIK & DRIVE SYNC]
+                </div>
+                <p class="text-[11px] font-bold underline" id="prevBodyTtd">Sekretaris Instansi</p>
+                <p class="text-[10px] text-slate-500">NIP. 19891026 201201 1 002</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="p-3 bg-white border-t border-slate-200 flex justify-between items-center text-xs">
+        <span class="text-[11px] text-slate-500 font-mono" id="prevModalDrivePath">drive.google.com/file/d/simulated-id</span>
+        <button onclick="closeModalPreview()" class="py-1.5 px-3 rounded bg-slate-800 text-white text-xs font-semibold">Tutup Pratinjau</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- LOGIKA JAVASCRIPT & STATE MANAGEMENT -->
+  <!-- ======================================================== -->
+  <script>
+    // Inisialisasi State Aplikasi
+    const STORAGE_KEY = 'SIMAS_DRIVE_V1';
+
+    let appState = {
+      suratMasuk: [],
+      suratKeluar: [], // Riwayat nomor surat keluar
+      driveFiles: []   // Berkas virtual yang tersimpan di Google Drive
+    };
+
+    // Angka Romawi untuk Bulan
+    const ROMAN_MONTHS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+
+    // ========================================================
+    // INITIALIZATION & SEEDING
+    // ========================================================
+    window.onload = function() {
+      lucide.createIcons();
+      loadStateFromStorage();
+
+      // Atur tanggal default di form input
+      const today = new Date().toISOString().split('T')[0];
+      if (document.getElementById('inMasukTglSurat')) document.getElementById('inMasukTglSurat').value = today;
+      if (document.getElementById('inMasukTglTerima')) document.getElementById('inMasukTglTerima').value = today;
+
+      // Update badge header
+      updateDateBadges();
+      previewNomorSurat();
+
+      // Render pertama kali
+      renderDashboard();
+      renderTabelSuratMasuk();
+      renderTabelSuratKeluar();
+      refreshDriveExplorer();
+    };
+
+    function updateDateBadges() {
+      const now = new Date();
+      const monthIdx = now.getMonth();
+      const year = now.getFullYear();
+      const romanMonth = ROMAN_MONTHS[monthIdx];
+
+      const romElem = document.getElementById('currentRomanMonthBadge');
+      const yrElem = document.getElementById('currentYearBadge');
+      if (romElem) romElem.textContent = `${romanMonth} (${now.toLocaleString('id-ID', { month: 'long' })})`;
+      if (yrElem) yrElem.textContent = year;
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {
+        console.error("Gagal simpan ke localStorage", err);
+      }
+    }
+
+    function loadStateFromStorage() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          appState = JSON.parse(raw);
+        } catch (e) {
+          console.error("Gagal parse localStorage, memuat default.", e);
+          initDefaultSampleData();
+        }
+      } else {
+        initDefaultSampleData();
+      }
+    }
+
+    function resetDataSample() {
+      if (window.confirm("Muat ulang contoh data demonstrasi? Data kustom Anda saat ini akan direset.")) {
+        initDefaultSampleData();
+        saveStateToStorage();
+        renderDashboard();
+        renderTabelSuratMasuk();
+        renderTabelSuratKeluar();
+        refreshDriveExplorer();
+        showToast("Data sampel berhasil dimuat ulang!", "success");
+      }
+    }
+
+    function initDefaultSampleData() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const monthRoman = ROMAN_MONTHS[today.getMonth()];
+
+      appState = {
+        suratMasuk: [
+          {
+            id: 'SM-101',
+            nomorAsal: '005/182/BAPPEDA/X/2026',
+            pengirim: 'Bappeda & Litbang Provinsi',
+            perihal: 'Undangan Rapat Koordinasi Rencana Strategis Tahunan Wilayah',
+            tglSurat: '2026-10-20',
+            tglTerima: '2026-10-22',
+            sifat: 'Penting',
+            driveFileId: 'DRV-IN-01',
+            fileName: 'SM_20261022_Bappeda_RakorRenstra.pdf',
+            fileSize: '1.4 MB',
+            drivePath: 'ARSIP_GOOGLE_DRIVE/01_SURAT_MASUK/2026/10_Oktober'
+          },
+          {
+            id: 'SM-102',
+            nomorAsal: '800/912/BKD-MUT/X/2026',
+            pengirim: 'Badan Kepegawaian Daerah',
+            perihal: 'Pengantar SK Mutasi Pegawai Golongan III/A',
+            tglSurat: '2026-10-24',
+            tglTerima: '2026-10-25',
+            sifat: 'Rahasia',
+            driveFileId: 'DRV-IN-02',
+            fileName: 'SM_20261025_BKD_PengantarMutasi.pdf',
+            fileSize: '820 KB',
+            drivePath: 'ARSIP_GOOGLE_DRIVE/01_SURAT_MASUK/2026/10_Oktober'
+          }
+        ],
+        suratKeluar: [
+          {
+            id: 'SK-201',
+            nomorUrut: 1,
+            kodeSurat: 'ST',
+            nomorLengkap: `001/ST/KEMEN-KALTARA/${monthRoman}/${year}`,
+            perihal: 'Surat Tugas Monitoring Sarana Prasarana Digital Wilayah Perbatasan',
+            pemohon: 'Hendro Prasetyo, S.Kom',
+            unitKerja: 'Bidang Teknis & Sarana',
+            tglAmbil: '2026-10-21',
+            status: 'TERARSIP', // TERARSIP atau PENDING
+            driveFileId: 'DRV-OUT-01',
+            fileName: `SK_001_ST_Monitoring_Sarpras_${year}.pdf`,
+            fileSize: '2.1 MB',
+            drivePath: `ARSIP_GOOGLE_DRIVE/02_SURAT_KELUAR/${year}/Surat_Tugas`
+          },
+          {
+            id: 'SK-202',
+            nomorUrut: 2,
+            kodeSurat: 'UND',
+            nomorLengkap: `002/UND/KEMEN-KALTARA/${monthRoman}/${year}`,
+            perihal: 'Undangan Evaluasi Triwulan III Bersama Seluruh Kepala Seksi',
+            pemohon: 'Siti Aminah, M.AP',
+            unitKerja: 'Sekretariat Utama',
+            tglAmbil: '2026-10-23',
+            status: 'PENDING', // Belum upload berkas final
+            driveFileId: null,
+            fileName: null,
+            fileSize: null,
+            drivePath: null
+          }
+        ],
+        driveFiles: [
+          {
+            id: 'DRV-IN-01',
+            name: 'SM_20261022_Bappeda_RakorRenstra.pdf',
+            category: '01_SURAT_MASUK',
+            path: 'ARSIP_GOOGLE_DRIVE/01_SURAT_MASUK/2026/10_Oktober',
+            size: '1.4 MB',
+            tglUpload: '2026-10-22 09:30',
+            refNomor: '005/182/BAPPEDA/X/2026',
+            refPerihal: 'Undangan Rapat Koordinasi Rencana Strategis Tahunan Wilayah'
+          },
+          {
+            id: 'DRV-IN-02',
+            name: 'SM_20261025_BKD_PengantarMutasi.pdf',
+            category: '01_SURAT_MASUK',
+            path: 'ARSIP_GOOGLE_DRIVE/01_SURAT_MASUK/2026/10_Oktober',
+            size: '820 KB',
+            tglUpload: '2026-10-25 14:15',
+            refNomor: '800/912/BKD-MUT/X/2026',
+            refPerihal: 'Pengantar SK Mutasi Pegawai Golongan III/A'
+          },
+          {
+            id: 'DRV-OUT-01',
+            name: `SK_001_ST_Monitoring_Sarpras_${year}.pdf`,
+            category: '02_SURAT_KELUAR',
+            path: `ARSIP_GOOGLE_DRIVE/02_SURAT_KELUAR/${year}/Surat_Tugas`,
+            size: '2.1 MB',
+            tglUpload: '2026-10-21 16:40',
+            refNomor: `001/ST/KEMEN-KALTARA/${monthRoman}/${year}`,
+            refPerihal: 'Surat Tugas Monitoring Sarana Prasarana Digital Wilayah Perbatasan'
+          }
+        ]
+      };
+      saveStateToStorage();
+    }
+
+
+    // ========================================================
+    // TAB SWITCHER
+    // ========================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-brand-700', 'shadow-xs', 'font-semibold');
+        btn.classList.add('text-slate-600');
+      });
+
+      const targetContent = document.getElementById(`tab-${tabId}`);
+      const targetBtn = document.getElementById(`tabBtn-${tabId}`);
+
+      if (targetContent) targetContent.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.add('bg-white', 'text-brand-700', 'shadow-xs', 'font-semibold');
+        targetBtn.classList.remove('text-slate-600');
+      }
+
+      // Re-trigger render jika perlu
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'surat-masuk') renderTabelSuratMasuk();
+      if (tabId === 'surat-keluar') renderTabelSuratKeluar();
+      if (tabId === 'drive-explorer') refreshDriveExplorer();
+
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+    // ========================================================
+    // DASHBOARD RENDERING
+    // ========================================================
+    function renderDashboard() {
+      const totalMasuk = appState.suratMasuk.length;
+      const totalKeluar = appState.suratKeluar.length;
+      const pendingCount = appState.suratKeluar.filter(s => s.status === 'PENDING').length;
+      const totalDrive = appState.driveFiles.length;
+
+      document.getElementById('statSuratMasuk').textContent = totalMasuk;
+      document.getElementById('statSuratKeluar').textContent = totalKeluar;
+      document.getElementById('statPendingUpload').textContent = pendingCount;
+      document.getElementById('statTotalDriveFiles').textContent = totalDrive;
+
+      // Render Riwayat Aktivitas Terbaru (Gabungan Masuk & Keluar)
+      const list = [];
+      appState.suratMasuk.forEach(m => {
+        list.push({
+          type: 'Masuk',
+          nomor: m.nomorAsal,
+          perihal: m.perihal,
+          tgl: m.tglTerima,
+          isDrive: !!m.driveFileId,
+          raw: m
+        });
+      });
+      appState.suratKeluar.forEach(k => {
+        list.push({
+          type: 'Keluar',
+          nomor: k.nomorLengkap,
+          perihal: k.perihal,
+          tgl: k.tglAmbil,
+          isDrive: k.status === 'TERARSIP',
+          raw: k
+        });
+      });
+
+      // Urutkan paling baru
+      list.sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+      const topList = list.slice(0, 5);
+
+      const tbody = document.getElementById('recentActivityTable');
+      tbody.innerHTML = '';
+
+      if (topList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">Belum ada catatan aktivitas surat</td></tr>`;
+        return;
+      }
+
+      topList.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+        
+        const typeBadge = item.type === 'Masuk' 
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">SM</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-800">SK</span>`;
+
+        const driveBadge = item.isDrive
+          ? `<span class="inline-flex items-center space-x-1 text-emerald-700 font-medium text-[11px]"><i data-lucide="cloud" class="w-3.5 h-3.5"></i><span>Terarsip</span></span>`
+          : `<span class="inline-flex items-center space-x-1 text-amber-600 font-medium text-[11px]"><i data-lucide="clock" class="w-3.5 h-3.5"></i><span>Belum Berkas</span></span>`;
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-medium text-slate-800">
+            <div class="flex items-center space-x-2">
+              ${typeBadge}
+              <span class="truncate max-w-[180px]">${item.nomor}</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-slate-600 max-w-xs truncate">${item.perihal}</td>
+          <td class="py-3 px-4">${driveBadge}</td>
+          <td class="py-3 px-4 text-right">
+            ${item.isDrive ? `
+              <button onclick="previewFileVirtual('${item.raw.driveFileId}')" class="text-sky-600 hover:text-sky-800 font-semibold text-xs flex items-center justify-end space-x-1">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>Lihat</span>
+              </button>
+            ` : `
+              <button onclick="openUploadSusulan('${item.raw.id}')" class="text-amber-600 hover:text-amber-800 font-semibold text-xs flex items-center justify-end space-x-1">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                <span>Upload</span>
+              </button>
+            `}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+
+    // ========================================================
+    // MODUL 2: GENERATOR NOMOR SURAT OTOMATIS
+    // ========================================================
+    function getNextNomorUrut() {
+      if (appState.suratKeluar.length === 0) return 1;
+      const maxUrut = Math.max(...appState.suratKeluar.map(s => s.nomorUrut || 0));
+      return maxUrut + 1;
+    }
+
+    function generateFormattedNomor(kode, urut) {
+      const now = new Date();
+      const romanMonth = ROMAN_MONTHS[now.getMonth()];
+      const year = now.getFullYear();
+      const paddedUrut = String(urut).padStart(3, '0');
+      return `${paddedUrut}/${kode}/KEMEN-KALTARA/${romanMonth}/${year}`;
+    }
+
+    function previewNomorSurat() {
+      const kode = document.getElementById('selectKlasifikasi').value;
+      const nextUrut = getNextNomorUrut();
+      const generated = generateFormattedNomor(kode, nextUrut);
+      document.getElementById('previewNomorBox').textContent = generated;
+    }
+
+    function handleAmbilNomor(event) {
+      event.preventDefault();
+
+      const selectKlasifikasi = document.getElementById('selectKlasifikasi');
+      const kode = selectKlasifikasi.value;
+      const perihal = document.getElementById('inputPerihal').value.trim();
+      const pemohon = document.getElementById('inputPemohon').value.trim();
+      const unitKerja = document.getElementById('selectUnitKerja').value;
+      const fileInput = document.getElementById('inputBerkasLangsung');
+
+      const nomorUrut = getNextNomorUrut();
+      const nomorLengkap = generateFormattedNomor(kode, nomorUrut);
+      const newId = 'SK-' + Date.now().toString().slice(-5);
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const year = now.getFullYear();
+
+      let isUploaded = false;
+      let driveFileId = null;
+      let fileName = null;
+      let drivePath = null;
+      let fileSize = null;
+
+      // Cek apakah langsung unggah berkas
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        driveFileId = 'DRV-OUT-' + Date.now().toString().slice(-4);
+        fileName = `SK_${String(nomorUrut).padStart(3, '0')}_${kode}_${file.name.replace(/\s+/g, '_')}`;
+        fileSize = (file.size / (1024 * 1024) > 1) 
+          ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' 
+          : Math.round(file.size / 1024) + ' KB';
+        drivePath = `ARSIP_GOOGLE_DRIVE/02_SURAT_KELUAR/${year}/${kode}`;
+        isUploaded = true;
+
+        // Tambah ke virtual Google Drive
+        appState.driveFiles.unshift({
+          id: driveFileId,
+          name: fileName,
+          category: '02_SURAT_KELUAR',
+          path: drivePath,
+          size: fileSize,
+          tglUpload: formatTimestamp(now),
+          refNomor: nomorLengkap,
+          refPerihal: perihal
+        });
+      }
+
+      // Buat Record Surat Keluar
+      const record = {
+        id: newId,
+        nomorUrut: nomorUrut,
+        kodeSurat: kode,
+        nomorLengkap: nomorLengkap,
+        perihal: perihal,
+        pemohon: pemohon,
+        unitKerja: unitKerja,
+        tglAmbil: today,
+        status: isUploaded ? 'TERARSIP' : 'PENDING',
+        driveFileId: driveFileId,
+        fileName: fileName,
+        fileSize: fileSize,
+        drivePath: drivePath
+      };
+
+      appState.suratKeluar.unshift(record);
+      saveStateToStorage();
+
+      // Update Tampilan Hasil
+      document.getElementById('displayNomorBaru').textContent = nomorLengkap;
+      document.getElementById('displayPerihal').textContent = perihal;
+      document.getElementById('displayPemohon').textContent = `${pemohon} (${unitKerja})`;
+      document.getElementById('displayTanggal').textContent = today;
+      
+      const badgeStatus = document.getElementById('badgeHasilStatus');
+      const driveStatus = document.getElementById('displayDriveStatus');
+
+      if (isUploaded) {
+        badgeStatus.className = "px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200";
+        badgeStatus.textContent = "Terarsip di Drive";
+        driveStatus.className = "font-mono text-[11px] text-emerald-600 font-semibold";
+        driveStatus.textContent = drivePath + '/' + fileName;
+      } else {
+        badgeStatus.className = "px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200";
+        badgeStatus.textContent = "Belum Ada Berkas";
+        driveStatus.className = "font-mono text-[11px] text-amber-600";
+        driveStatus.textContent = "Menunggu Upload Berkas";
+      }
+
+      // Animasi kedip pada hasil
+      const card = document.getElementById('hasilNomorCard');
+      card.classList.add('custom-pulse');
+      setTimeout(() => card.classList.remove('custom-pulse'), 3000);
+
+      // Reset form
+      document.getElementById('formAmbilNomor').reset();
+      document.getElementById('labelBerkasLangsung').textContent = 'Pilih file PDF/Word jika berkas sudah final';
+      previewNomorSurat();
+
+      showToast(`Nomor ${nomorLengkap} berhasil diterbitkan!`, 'success');
+      renderDashboard();
+    }
+
+    function copyHasilNomor() {
+      const nomor = document.getElementById('displayNomorBaru').textContent.trim();
+      if (!nomor || nomor === '- BELUM ADA NOMOR -') {
+        showToast('Belum ada nomor yang bisa disalin.', 'error');
+        return;
+      }
+      copyToClipboard(nomor);
+    }
+
+    function copyToClipboard(text) {
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast(`Nomor surat berhasil disalin: ${text}`, 'success');
+      } catch (err) {
+        showToast('Gagal menyalin teks ke clipboard', 'error');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+
+    // ========================================================
+    // MODUL 3: SURAT MASUK
+    // ========================================================
+    function openModalSuratMasuk() {
+      document.getElementById('modalSuratMasuk').classList.remove('hidden');
+      document.getElementById('modalSuratMasuk').classList.add('flex');
+    }
+
+    function closeModalSuratMasuk() {
+      document.getElementById('modalSuratMasuk').classList.add('hidden');
+      document.getElementById('modalSuratMasuk').classList.remove('flex');
+    }
+
+    function handleSimpanSuratMasuk(e) {
+      e.preventDefault();
+
+      const nomorAsal = document.getElementById('inMasukNomorAsal').value.trim();
+      const pengirim = document.getElementById('inMasukPengirim').value.trim();
+      const tglSurat = document.getElementById('inMasukTglSurat').value;
+      const tglTerima = document.getElementById('inMasukTglTerima').value;
+      const perihal = document.getElementById('inMasukPerihal').value.trim();
+      const sifat = document.getElementById('inMasukSifat').value;
+      const fileInput = document.getElementById('inMasukFile');
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const monthNumber = String(now.getMonth() + 1).padStart(2, '0');
+      const monthName = now.toLocaleString('id-ID', { month: 'long' });
+
+      // Generate Data Drive Otomatis
+      const driveFileId = 'DRV-IN-' + Date.now().toString().slice(-4);
+      let originalName = (fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : 'surat_masuk.pdf';
+      const cleanFileName = `SM_${tglTerima.replace(/-/g, '')}_${pengirim.replace(/[^a-zA-Z0-9]/g, '_')}_${originalName.replace(/\s+/g, '_')}`;
+      const fileSize = (fileInput.files && fileInput.files[0]) 
+        ? ((fileInput.files[0].size / (1024 * 1024) > 1) 
+            ? (fileInput.files[0].size / (1024 * 1024)).toFixed(1) + ' MB' 
+            : Math.round(fileInput.files[0].size / 1024) + ' KB')
+        : '1.2 MB';
+
+      const drivePath = `ARSIP_GOOGLE_DRIVE/01_SURAT_MASUK/${year}/${monthNumber}_${monthName}`;
+
+      // Simpan ke virtual drive
+      appState.driveFiles.unshift({
+        id: driveFileId,
+        name: cleanFileName,
+        category: '01_SURAT_MASUK',
+        path: drivePath,
+        size: fileSize,
+        tglUpload: formatTimestamp(now),
+        refNomor: nomorAsal,
+        refPerihal: perihal
+      });
+
+      // Simpan ke surat masuk
+      appState.suratMasuk.unshift({
+        id: 'SM-' + Date.now().toString().slice(-5),
+        nomorAsal: nomorAsal,
+        pengirim: pengirim,
+        perihal: perihal,
+        tglSurat: tglSurat,
+        tglTerima: tglTerima,
+        sifat: sifat,
+        driveFileId: driveFileId,
+        fileName: cleanFileName,
+        fileSize: fileSize,
+        drivePath: drivePath
+      });
+
+      saveStateToStorage();
+      closeModalSuratMasuk();
+      renderTabelSuratMasuk();
+      renderDashboard();
+      refreshDriveExplorer();
+
+      // Reset form
+      e.target.reset();
+      document.getElementById('labelMasukFile').textContent = 'Klik untuk memilih file scan surat';
+      showToast('Surat Masuk & Berkas Scan Berhasil Disimpan ke Drive!', 'success');
+    }
+
+    function renderTabelSuratMasuk() {
+      const tbody = document.getElementById('tabelSuratMasukBody');
+      const keyword = document.getElementById('searchSuratMasuk').value.toLowerCase();
+      const filterSifat = document.getElementById('filterSifatSurat').value;
+
+      tbody.innerHTML = '';
+
+      let data = appState.suratMasuk.filter(item => {
+        const matchSearch = item.nomorAsal.toLowerCase().includes(keyword) ||
+                            item.pengirim.toLowerCase().includes(keyword) ||
+                            item.perihal.toLowerCase().includes(keyword);
+        const matchSifat = filterSifat === 'ALL' || item.sifat === filterSifat;
+        return matchSearch && matchSifat;
+      });
+
+      document.getElementById('infoSuratMasukCount').textContent = `Menampilkan ${data.length} dari ${appState.suratMasuk.length} surat masuk`;
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada data surat masuk ditemukan</td></tr>`;
+        return;
+      }
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+
+        let sifatBadgeColor = "bg-slate-100 text-slate-700";
+        if (item.sifat === 'Penting') sifatBadgeColor = "bg-amber-100 text-amber-800";
+        if (item.sifat === 'Rahasia') sifatBadgeColor = "bg-rose-100 text-rose-800";
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-500 font-medium whitespace-nowrap">${item.tglTerima}</td>
+          <td class="py-3 px-4">
+            <div class="font-mono font-bold text-slate-900">${item.nomorAsal}</div>
+            <div class="text-[11px] text-slate-500">${item.pengirim}</div>
+          </td>
+          <td class="py-3 px-4 text-slate-700 max-w-sm">
+            <p class="font-medium truncate">${item.perihal}</p>
+            <span class="text-[10px] text-slate-400">Tgl Surat: ${item.tglSurat}</span>
+          </td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${sifatBadgeColor}">${item.sifat}</span>
+          </td>
+          <td class="py-3 px-4">
+            <div class="flex items-center space-x-1 text-emerald-700 font-medium text-xs">
+              <i data-lucide="cloud-check" class="w-4 h-4 text-emerald-600"></i>
+              <span class="truncate max-w-[140px] text-[11px] font-mono">${item.fileName}</span>
+            </div>
+            <div class="text-[10px] text-slate-400">${item.fileSize}</div>
+          </td>
+          <td class="py-3 px-4 text-center">
+            <button onclick="previewFileVirtual('${item.driveFileId}')" class="py-1.5 px-3 rounded-md bg-sky-50 text-sky-700 hover:bg-sky-100 font-medium text-xs inline-flex items-center space-x-1 transition-colors">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              <span>Preview</span>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+
+    // ========================================================
+    // MODUL 4: SURAT KELUAR & ARSIP NOMOR
+    // ========================================================
+    function renderTabelSuratKeluar() {
+      const tbody = document.getElementById('tabelSuratKeluarBody');
+      const keyword = document.getElementById('searchSuratKeluar').value.toLowerCase();
+      const filterStatus = document.getElementById('filterStatusSuratKeluar').value;
+
+      tbody.innerHTML = '';
+
+      let data = appState.suratKeluar.filter(item => {
+        const matchSearch = item.nomorLengkap.toLowerCase().includes(keyword) ||
+                            item.pemohon.toLowerCase().includes(keyword) ||
+                            item.perihal.toLowerCase().includes(keyword) ||
+                            item.unitKerja.toLowerCase().includes(keyword);
+        const matchStatus = filterStatus === 'ALL' || item.status === filterStatus;
+        return matchSearch && matchStatus;
+      });
+
+      document.getElementById('infoSuratKeluarCount').textContent = `Menampilkan ${data.length} dari ${appState.suratKeluar.length} nomor surat`;
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada nomor surat keluar ditemukan</td></tr>`;
+        return;
+      }
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+
+        const isArchived = item.status === 'TERARSIP';
+
+        const statusBadge = isArchived
+          ? `<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><i data-lucide="check" class="w-3 h-3"></i><span>Terarsip di Drive</span></span>`
+          : `<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200"><i data-lucide="clock" class="w-3 h-3"></i><span>Belum Upload Berkas</span></span>`;
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-500 font-medium whitespace-nowrap">${item.tglAmbil}</td>
+          <td class="py-3 px-4">
+            <div class="flex items-center space-x-1.5">
+              <span class="font-mono font-bold text-slate-900 select-all">${item.nomorLengkap}</span>
+              <button onclick="copyToClipboard('${item.nomorLengkap}')" title="Salin Nomor" class="text-slate-400 hover:text-slate-700 p-0.5 rounded">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <div class="text-[10px] text-slate-400">Kode: ${item.kodeSurat} • Urut #${item.nomorUrut}</div>
+          </td>
+          <td class="py-3 px-4">
+            <div class="font-medium text-slate-800">${item.pemohon}</div>
+            <div class="text-[11px] text-slate-500">${item.unitKerja}</div>
+          </td>
+          <td class="py-3 px-4 text-slate-700 max-w-sm truncate" title="${item.perihal}">${item.perihal}</td>
+          <td class="py-3 px-4">${statusBadge}</td>
+          <td class="py-3 px-4 text-center">
+            ${isArchived ? `
+              <button onclick="previewFileVirtual('${item.driveFileId}')" class="py-1 px-2.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs inline-flex items-center space-x-1 transition-colors">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                <span>Lihat Berkas</span>
+              </button>
+            ` : `
+              <button onclick="openUploadSusulan('${item.id}')" class="py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs inline-flex items-center space-x-1.5 shadow-xs transition-colors">
+                <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                <span>Upload Berkas</span>
+              </button>
+            `}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    // Modal Upload Susulan untuk Nomor yang sudah diambil
+    function openUploadSusulan(id) {
+      const item = appState.suratKeluar.find(s => s.id === id);
+      if (!item) return;
+
+      document.getElementById('susulanNomorId').value = item.id;
+      document.getElementById('susulanNomorLabel').textContent = item.nomorLengkap;
+      document.getElementById('susulanPerihalLabel').textContent = `Perihal: ${item.perihal}`;
+      document.getElementById('labelSusulanFile').textContent = 'Klik untuk memilih file PDF dokumen resmi';
+      document.getElementById('inputSusulanFile').value = '';
+
+      document.getElementById('modalUploadSusulan').classList.remove('hidden');
+      document.getElementById('modalUploadSusulan').classList.add('flex');
+    }
+
+    function closeModalUploadSusulan() {
+      document.getElementById('modalUploadSusulan').classList.add('hidden');
+      document.getElementById('modalUploadSusulan').classList.remove('flex');
+    }
+
+    function handleUploadSusulan(e) {
+      e.preventDefault();
+      const id = document.getElementById('susulanNomorId').value;
+      const fileInput = document.getElementById('inputSusulanFile');
+
+      const index = appState.suratKeluar.findIndex(s => s.id === id);
+      if (index === -1) return;
+
+      const item = appState.suratKeluar[index];
+      const now = new Date();
+      const year = now.getFullYear();
+
+      const driveFileId = 'DRV-OUT-' + Date.now().toString().slice(-4);
+      const originalFile = fileInput.files[0];
+      const cleanFileName = `SK_${String(item.nomorUrut).padStart(3, '0')}_${item.kodeSurat}_${originalFile.name.replace(/\s+/g, '_')}`;
+      const fileSize = (originalFile.size / (1024 * 1024) > 1) 
+        ? (originalFile.size / (1024 * 1024)).toFixed(1) + ' MB' 
+        : Math.round(originalFile.size / 1024) + ' KB';
+      const drivePath = `ARSIP_GOOGLE_DRIVE/02_SURAT_KELUAR/${year}/${item.kodeSurat}`;
+
+      // Update data surat keluar
+      item.status = 'TERARSIP';
+      item.driveFileId = driveFileId;
+      item.fileName = cleanFileName;
+      item.fileSize = fileSize;
+      item.drivePath = drivePath;
+
+      // Tambahkan ke repositori Drive
+      appState.driveFiles.unshift({
+        id: driveFileId,
+        name: cleanFileName,
+        category: '02_SURAT_KELUAR',
+        path: drivePath,
+        size: fileSize,
+        tglUpload: formatTimestamp(now),
+        refNomor: item.nomorLengkap,
+        refPerihal: item.perihal
+      });
+
+      saveStateToStorage();
+      closeModalUploadSusulan();
+      renderTabelSuratKeluar();
+      renderDashboard();
+      refreshDriveExplorer();
+
+      showToast(`Berkas untuk nomor ${item.nomorLengkap} berhasil diunggah ke Google Drive!`, 'success');
+    }
+
+
+    // ========================================================
+    // MODUL 5: GOOGLE DRIVE VIRTUAL EXPLORER
+    // ========================================================
+    let currentFolderFilter = 'ALL';
+
+    function filterDriveByFolder(folderKey) {
+      currentFolderFilter = folderKey;
+
+      // Styling Tombol Folder
+      ['ALL', '01_SURAT_MASUK', '02_SURAT_KELUAR'].forEach(k => {
+        const btn = document.getElementById(`folderBtn-${k}`);
+        if (!btn) return;
+        if (k === folderKey) {
+          btn.className = "w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-left font-medium bg-brand-50 text-brand-700 font-semibold";
+        } else {
+          btn.className = "w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-left font-medium text-slate-600 hover:bg-slate-100";
+        }
+      });
+
+      const breadcrumb = document.getElementById('currentDriveBreadcrumb');
+      if (folderKey === 'ALL') {
+        breadcrumb.textContent = 'ARSIP_GOOGLE_DRIVE / [Semua Berkas]';
+      } else {
+        breadcrumb.textContent = `ARSIP_GOOGLE_DRIVE / ${folderKey} /`;
+      }
+
+      refreshDriveExplorer();
+    }
+
+    function refreshDriveExplorer() {
+      const masukCount = appState.driveFiles.filter(f => f.category === '01_SURAT_MASUK').length;
+      const keluarCount = appState.driveFiles.filter(f => f.category === '02_SURAT_KELUAR').length;
+
+      document.getElementById('badgeFolderMasukCount').textContent = masukCount;
+      document.getElementById('badgeFolderKeluarCount').textContent = keluarCount;
+
+      let filteredFiles = appState.driveFiles;
+      if (currentFolderFilter !== 'ALL') {
+        filteredFiles = filteredFiles.filter(f => f.category === currentFolderFilter);
+      }
+
+      document.getElementById('driveFileCountBadge').textContent = `${filteredFiles.length} Berkas Ditemukan`;
+
+      // Update estimasi kapasitas
+      const totalKB = appState.driveFiles.length * 1250; // Mock rata-rata
+      const mbText = (totalKB / 1024).toFixed(1) + ' MB';
+      document.getElementById('driveStorageUsedText').textContent = `${mbText} Digunakan`;
+
+      const grid = document.getElementById('driveFileGrid');
+      grid.innerHTML = '';
+
+      if (filteredFiles.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-2 flex flex-col items-center justify-center py-12 text-slate-400">
+            <i data-lucide="folder-x" class="w-12 h-12 stroke-[1.5] text-slate-300 mb-2"></i>
+            <p class="text-xs">Folder ini masih kosong atau belum ada berkas terunggah.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filteredFiles.forEach(file => {
+        const card = document.createElement('div');
+        card.className = "border border-slate-200 rounded-xl p-3.5 hover:shadow-md transition-shadow bg-slate-50/50 flex flex-col justify-between";
+
+        const isMasuk = file.category === '01_SURAT_MASUK';
+        const iconColor = isMasuk ? "text-emerald-600 bg-emerald-50" : "text-sky-600 bg-sky-50";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start space-x-3">
+              <div class="w-10 h-10 rounded-lg ${iconColor} flex items-center justify-center shrink-0">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+              </div>
+              <div class="overflow-hidden">
+                <h4 class="text-xs font-bold text-slate-800 truncate" title="${file.name}">${file.name}</h4>
+                <p class="text-[10px] text-slate-400 font-mono truncate">${file.path}</p>
+              </div>
+            </div>
+            <div class="mt-3 p-2 bg-white rounded border border-slate-200/80 text-[11px] text-slate-600 space-y-1">
+              <div class="truncate"><strong>Ref:</strong> ${file.refNomor}</div>
+              <div class="truncate text-[10px] text-slate-500">${file.refPerihal}</div>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-200 flex items-center justify-between text-xs">
+            <span class="text-[10px] text-slate-400">${file.size} • ${file.tglUpload.split(' ')[0]}</span>
+            <div class="flex space-x-1">
+              <button onclick="previewFileVirtual('${file.id}')" title="Preview Dokumen" class="p-1.5 rounded hover:bg-slate-200 text-slate-600">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+              <button onclick="simulateDriveDirectLink('${file.name}')" title="Buka Link Google Drive" class="p-1.5 rounded hover:bg-slate-200 text-brand-600">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function simulateDriveDirectLink(fileName) {
+      showToast(`Membuka simulasi URL Drive: https://drive.google.com/open?file=${encodeURIComponent(fileName)}`, 'info');
+    }
+
+
+    // ========================================================
+    // MODAL PREVIEW DOKUMEN VIRTUAL
+    // ========================================================
+    function previewFileVirtual(driveFileId) {
+      const file = appState.driveFiles.find(f => f.id === driveFileId);
+      let nomor = "-";
+      let hal = "-";
+      let sifat = "Biasa";
+      let tujuan = "Instansi / Pejabat Terkait";
+      let ttd = "Sekretaris Instansi";
+
+      if (file) {
+        nomor = file.refNomor;
+        hal = file.refPerihal;
+        document.getElementById('previewModalTitle').textContent = file.name;
+        document.getElementById('prevModalDrivePath').textContent = file.path + '/' + file.name;
+      } else {
+        document.getElementById('previewModalTitle').textContent = "Dokumen_Arsip.pdf";
+      }
+
+      // Cari metadata lebih detail bila ada
+      const refSM = appState.suratMasuk.find(m => m.driveFileId === driveFileId);
+      if (refSM) {
+        nomor = refSM.nomorAsal;
+        hal = refSM.perihal;
+        sifat = refSM.sifat;
+        tujuan = "Kepala Dinas Administrasi";
+        ttd = refSM.pengirim;
+      }
+
+      const refSK = appState.suratKeluar.find(k => k.driveFileId === driveFileId);
+      if (refSK) {
+        nomor = refSK.nomorLengkap;
+        hal = refSK.perihal;
+        tujuan = "Pihak Terkait / Penerima Tugas";
+        ttd = refSK.pemohon;
+      }
+
+      document.getElementById('prevBodyNomor').textContent = nomor;
+      document.getElementById('prevBodyHal').textContent = hal;
+      document.getElementById('prevBodySifat').textContent = sifat;
+      document.getElementById('prevBodyTujuan').textContent = tujuan;
+      document.getElementById('prevBodyTtd').textContent = ttd;
+
+      document.getElementById('modalPreviewBerkas').classList.remove('hidden');
+      document.getElementById('modalPreviewBerkas').classList.add('flex');
+    }
+
+    function closeModalPreview() {
+      document.getElementById('modalPreviewBerkas').classList.add('hidden');
+      document.getElementById('modalPreviewBerkas').classList.remove('flex');
+    }
+
+
+    // ========================================================
+    // EXPORT TO CSV / EXCEL
+    // ========================================================
+    function exportToCSV(type) {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      let filename = "";
+
+      if (type === 'masuk') {
+        filename = `Laporan_Surat_Masuk_${new Date().toISOString().split('T')[0]}.csv`;
+        csvContent += "ID,Tanggal Terima,Nomor Asal,Pengirim,Perihal,Sifat,Status Drive,Nama File\r\n";
+        appState.suratMasuk.forEach(s => {
+          csvContent += `"${s.id}","${s.tglTerima}","${s.nomorAsal}","${s.pengirim}","${s.perihal}","${s.sifat}","Terarsip Drive","${s.fileName}"\r\n`;
+        });
+      } else {
+        filename = `Laporan_Surat_Keluar_Nomor_${new Date().toISOString().split('T')[0]}.csv`;
+        csvContent += "ID,Nomor Urut,Nomor Lengkap,Kode,Pemohon,Unit Kerja,Tanggal Ambil,Status,File Drive\r\n";
+        appState.suratKeluar.forEach(s => {
+          csvContent += `"${s.id}","${s.nomorUrut}","${s.nomorLengkap}","${s.kodeSurat}","${s.pemohon}","${s.unitKerja}","${s.tglAmbil}","${s.status}","${s.fileName || '-'}"\r\n`;
+        });
+      }
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast(`File ${filename} berhasil diunduh!`, 'success');
+    }
+
+
+    // ========================================================
+    // HELPER FUNCTIONS
+    // ========================================================
+    function handleFileSelected(inputElem, labelId) {
+      if (inputElem.files && inputElem.files[0]) {
+        document.getElementById(labelId).textContent = inputElem.files[0].name;
+      }
+    }
+
+    function formatTimestamp(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${mins}`;
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bg = "bg-slate-900 text-white";
+      let icon = "info";
+      if (type === 'success') {
+        bg = "bg-emerald-700 text-white";
+        icon = "check-circle";
+      } else if (type === 'error') {
+        bg = "bg-rose-700 text-white";
+        icon = "alert-triangle";
+      }
+
+      toast.className = `${bg} pointer-events-auto flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0`;
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      // Animasi masuk
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Hilang otomatis
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
